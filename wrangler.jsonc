@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "yt-3d",
+  "name": "video-playlist-el",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2026-06-04",
   "compatibility_flags": ["nodejs_compat"],
