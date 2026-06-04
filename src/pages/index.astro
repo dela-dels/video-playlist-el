@@ -250,7 +250,10 @@ const featured = videos[0];
     font-size: clamp(58px, 8.7vw, 132px);
     line-height: 0.82;
     letter-spacing: -0.09em;
+    overflow-wrap: normal;
+    text-wrap: pretty;
     text-transform: uppercase;
+    word-break: normal;
   }
 
   h1 em {
@@ -581,7 +584,9 @@ const featured = videos[0];
     }
 
     h1 {
-      font-size: clamp(52px, 17vw, 76px);
+      max-width: 100%;
+      padding-right: 12px;
+      font-size: clamp(34px, 11vw, 52px);
     }
 
     .controls {
