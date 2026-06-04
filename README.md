@@ -20,7 +20,7 @@ idempotently populating development data from `db/seed.ts`.
 Production uses a remote Turso libSQL database through Astro DB.
 
 1. Create a Turso database and token.
-2. Copy `.env.example` to `.env` for local production builds.
+2. Copy `.env.production.example` to `.env.production` for local production builds and schema commands.
 3. Set these variables in the Cloudflare build environment and deployed Worker:
 
 ```text
@@ -31,14 +31,18 @@ ASTRO_DB_APP_TOKEN=your-turso-auth-token
 4. Push the Astro DB schema to Turso:
 
 ```sh
-npm run db:push
+npm run db:push:production
 ```
 
 `ASTRO_DB_APP_TOKEN` is a secret. Do not commit it or place it in `wrangler.jsonc`.
+The production database must receive this schema before the Worker is deployed. Running
+`npm run db:push` with the development `.env` only updates `local.db`.
 
 ## Cloudflare Workers
 
-The app uses `@astrojs/cloudflare` and is configured in `wrangler.jsonc`. Astro DB is pinned to patch release `0.21.2` and configured with `mode: 'web'` because Cloudflare Workers cannot use Astro DB's default Node libSQL driver.
+The app uses `@astrojs/cloudflare` and is configured in `wrangler.jsonc`. Production builds
+configure Astro DB with `mode: 'web'` because Cloudflare Workers cannot use a file-backed
+SQLite database.
 
 Build and deploy:
 
@@ -46,7 +50,10 @@ Build and deploy:
 npm run deploy
 ```
 
-The production build script uses `astro build --remote`, which connects the generated Worker to Turso. A production build therefore requires the Turso environment variables even when run locally. Use `npm run dev` for file-backed local SQLite development.
+The production build script uses `astro build --remote`, which connects the generated Worker
+to Turso. A production build requires a remote `ASTRO_DB_REMOTE_URL` and will fail instead of
+silently falling back to `file:./local.db`. Use `npm run dev` for file-backed local SQLite
+development.
 
 To add the Turso token directly to an existing Worker through Wrangler:
 
