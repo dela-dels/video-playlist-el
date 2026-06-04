@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --ink: #080808;
+  --paper: #f8f8f3;
+  --muted: #76766f;
+  --line: #d8d8cf;
+  --green: #b6ff00;
+  --green-dark: #8dcc00;
+  --radius: 18px;
+  font-family: 'Space Grotesk', sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(182, 255, 0, 0.18), transparent 20rem),
+    var(--paper);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.shell {
+  width: min(1440px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--green);
+  font-size: 14px;
+}
+
+.brand-name {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 20px;
+  letter-spacing: -1px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 84px;
+  border-bottom: 1px solid var(--line);
+}
+
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-link,
+.pill-button {
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  padding: 11px 18px;
+  color: var(--ink);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.nav-link:hover,
+.pill-button:hover {
+  transform: translateY(-2px);
+}
+
+.nav-link.active,
+.pill-button.primary {
+  background: var(--ink);
+  color: white;
+}
+
+@media (max-width: 700px) {
+  .shell {
+    width: min(100% - 28px, 1440px);
+  }
+
+  .topbar {
+    min-height: 72px;
+  }
+
+  .nav-link {
+    padding: 9px 12px;
+    font-size: 11px;
+  }
+}

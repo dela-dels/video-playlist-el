@@ -1,0 +1,23 @@
+// {
+//   "$schema": "./node_modules/wrangler/config-schema.json",
+//   "name": "yt-3d",
+//   "main": "@astrojs/cloudflare/entrypoints/server",
+//   "compatibility_date": "2026-06-04",
+//   "compatibility_flags": ["nodejs_compat"],
+//   "observability": {
+//     "enabled": true,
+//     "head_sampling_rate": 1
+//   }
+// }
+{
+  "name": "yt-3d",
+  "compatibility_date": "2026-06-04",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist",
+  },
+  "observability": {
+    "enabled": true,
+  },
+}

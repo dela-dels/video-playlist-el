@@ -1,0 +1,375 @@
+---
+import '../styles/global.css';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content="Add video links to the PLAYLIST collection." />
+    <title>Admin — PLAYLIST</title>
+  </head>
+  <body>
+    <header class="shell topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">▶</span>
+        <span class="brand-name">PLAYLIST</span>
+      </a>
+      <nav class="topnav" aria-label="Primary navigation">
+        <a class="nav-link" href="/">Explore</a>
+        <a class="nav-link active" href="/admin">Admin</a>
+      </nav>
+    </header>
+
+    <main class="shell admin-layout">
+      <section class="admin-intro">
+        <p class="kicker">Admin portal <span>●</span></p>
+        <h1>Feed the<br /><em>playlist.</em></h1>
+        <p class="intro-copy">
+          Drop a YouTube link or any embeddable video URL. The collection handles the rest.
+        </p>
+        <a class="back-link" href="/">← Back to the collection</a>
+      </section>
+
+      <section class="form-panel">
+        <div class="form-head">
+          <span>01</span>
+          <div>
+            <p>New submission</p>
+            <h2>Add a video link</h2>
+          </div>
+        </div>
+
+        <form id="video-form">
+          <label>
+            <span>Video URL <b>*</b></span>
+            <input name="url" type="url" placeholder="https://youtube.com/watch?v=..." required />
+          </label>
+          <label>
+            <span>Title <b>*</b></span>
+            <input name="title" type="text" placeholder="A short, punchy title" required />
+          </label>
+          <div class="field-row">
+            <label>
+              <span>Creator</span>
+              <input name="creator" type="text" placeholder="Channel or author" />
+            </label>
+            <label>
+              <span>Duration</span>
+              <input name="duration" type="text" placeholder="12:42" />
+            </label>
+          </div>
+          <div class="form-actions">
+            <p id="form-status" role="status"></p>
+            <button class="submit-button" type="submit">
+              Add to playlist
+              <span>↗</span>
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script>
+      const form = document.querySelector<HTMLFormElement>('#video-form')!;
+      const status = document.querySelector<HTMLElement>('#form-status')!;
+      const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        status.textContent = '';
+        status.className = '';
+        submitButton.disabled = true;
+
+        const body = Object.fromEntries(new FormData(form));
+        const response = await fetch('/api/videos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const result = (await response.json()) as { error?: string };
+
+        if (response.ok) {
+          status.textContent = 'Added. It is live in the collection.';
+          status.className = 'success';
+          form.reset();
+        } else {
+          status.textContent = result.error ?? 'Unable to add this video.';
+          status.className = 'error';
+        }
+
+        submitButton.disabled = false;
+      });
+    </script>
+  </body>
+</html>
+
+<style>
+  .admin-layout {
+    display: grid;
+    grid-template-columns: 1fr minmax(460px, 0.72fr);
+    gap: 80px;
+    align-items: center;
+    min-height: calc(100vh - 85px);
+    padding-top: 50px;
+    padding-bottom: 70px;
+  }
+
+  .kicker {
+    margin: 0 0 30px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .kicker span {
+    margin-left: 6px;
+    color: var(--green-dark);
+  }
+
+  h1 {
+    margin: 0;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(64px, 8vw, 118px);
+    line-height: 0.82;
+    letter-spacing: -0.09em;
+    text-transform: uppercase;
+  }
+
+  h1 em {
+    color: transparent;
+    font-style: normal;
+    -webkit-text-stroke: 2px var(--ink);
+  }
+
+  .intro-copy {
+    max-width: 340px;
+    margin: 34px 0 46px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .back-link {
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .form-panel {
+    border-radius: 26px;
+    padding: 34px;
+    color: white;
+    background: var(--ink);
+    box-shadow: 18px 18px 0 var(--green);
+  }
+
+  .form-head {
+    display: flex;
+    align-items: start;
+    gap: 18px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid #2d2d2d;
+  }
+
+  .form-head > span {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--ink);
+    background: var(--green);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .form-head p {
+    margin: 0 0 4px;
+    color: #858585;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .form-head h2 {
+    margin: 0;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 25px;
+    letter-spacing: -0.05em;
+    text-transform: uppercase;
+  }
+
+  form {
+    padding-top: 30px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 22px;
+  }
+
+  label > span {
+    display: block;
+    margin-bottom: 8px;
+    color: #b9b9b9;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  label b {
+    color: var(--green);
+  }
+
+  input {
+    width: 100%;
+    border: 1px solid #383838;
+    border-radius: 12px;
+    outline: 0;
+    padding: 14px 15px;
+    color: white;
+    background: #151515;
+    font-size: 14px;
+    transition: border 160ms ease, background 160ms ease;
+  }
+
+  input:focus {
+    border-color: var(--green);
+    background: #1a1a1a;
+  }
+
+  input::placeholder {
+    color: #666;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 130px;
+    gap: 16px;
+  }
+
+  .form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    min-height: 50px;
+    margin-top: 8px;
+  }
+
+  #form-status {
+    max-width: 220px;
+    margin: 0;
+    color: #aaa;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  #form-status.success {
+    color: var(--green);
+  }
+
+  #form-status.error {
+    color: #ff7979;
+  }
+
+  .submit-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 18px;
+    border: 0;
+    border-radius: 999px;
+    padding: 14px 15px 14px 20px;
+    cursor: pointer;
+    color: var(--ink);
+    background: var(--green);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: transform 160ms ease, background 160ms ease;
+  }
+
+  .submit-button:hover {
+    transform: translateY(-2px);
+    background: white;
+  }
+
+  .submit-button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+
+  .submit-button span {
+    display: grid;
+    width: 25px;
+    height: 25px;
+    place-items: center;
+    border-radius: 50%;
+    color: white;
+    background: var(--ink);
+    font-size: 14px;
+  }
+
+  @media (max-width: 980px) {
+    .admin-layout {
+      grid-template-columns: 1fr;
+      gap: 50px;
+      padding-top: 70px;
+    }
+
+    .admin-intro {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 30px;
+    }
+
+    .kicker,
+    h1 {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .admin-layout {
+      padding-top: 50px;
+    }
+
+    .admin-intro {
+      display: block;
+    }
+
+    h1 {
+      font-size: clamp(60px, 18vw, 82px);
+    }
+
+    .form-panel {
+      padding: 24px;
+      box-shadow: 8px 8px 0 var(--green);
+    }
+
+    .field-row {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .form-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .submit-button {
+      justify-content: space-between;
+    }
+  }
+</style>

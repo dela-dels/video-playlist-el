@@ -1,17 +1,621 @@
 ---
+import '../styles/global.css';
+import { listVideos } from '../lib/videos';
 
+const videos = await listVideos();
+const featured = videos[0];
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content="A playful place to collect and preview videos." />
+    <title>PLAYLIST — Video collection</title>
+  </head>
+  <body>
+    <header class="shell topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">▶</span>
+        <span class="brand-name">PLAYLIST</span>
+      </a>
+      <nav class="topnav" aria-label="Primary navigation">
+        <a class="nav-link active" href="/">Explore</a>
+        <button class="nav-link" id="favorites-filter" type="button">Favorites</button>
+        <a class="nav-link" href="/admin">Admin</a>
+      </nav>
+    </header>
+
+    <main class="shell">
+      <!-- <section class="hero">
+        <div>
+          <p class="eyebrow"><span></span> Freshly picked 3D Motion links</p>
+          <h1>Press play.<br /><em>Stay curious.</em></h1>
+        </div>
+        <p class="hero-note">
+          A living collection of 3D motion background vidoes for the upcoming encounter love 2026
+        </p>
+      </section> -->
+
+      <section class="hero">
+        <div>
+          <p class="eyebrow"><span></span> Freshly picked 3D Motion links</p>
+          <h1>Encounter Love.<br /><em>3D Motion Backgrounds</em></h1>
+        </div>
+        <p class="hero-note">
+          A living collection of 3D motion background vidoes for the upcoming encounter love 2026
+        </p>
+      </section>
+
+      <div class="controls" aria-label="Video controls">
+        <label class="search">
+          <span>⌕</span>
+          <input id="search-input" type="search" placeholder="Search the collection" autocomplete="off" />
+        </label>
+        <p><strong id="video-count">{videos.length}</strong> videos in the mix</p>
+      </div>
+
+      <div class="video-list" id="video-grid" role="list" aria-label="Video collection">
+        {videos.map((video, index) => (
+          <article
+            class="video-card"
+            role="listitem"
+            data-title={`${video.title} ${video.creator}`.toLowerCase()}
+            data-favorite={String(video.isFavorite)}
+          >
+            <button
+              class="preview"
+              type="button"
+              data-preview
+              data-title={video.title}
+              data-embed={video.embedUrl}
+              aria-label={`Preview ${video.title}`}
+            >
+              {video.thumbnailUrl ? (
+                <img src={video.thumbnailUrl} alt="" loading={index > 2 ? 'lazy' : 'eager'} />
+              ) : (
+                <span class="no-thumb">VIDEO<br />LINK</span>
+              )}
+              <span class="preview-wash"></span>
+              <span class="play-icon">▶</span>
+            </button>
+            <div class="card-body">
+              <span class="list-number">{String(index + 1).padStart(2, '0')}</span>
+              <div class="card-copy">
+                <p>{video.creator}</p>
+                <h2>{video.title}</h2>
+              </div>
+              <span class="duration">{video.duration}</span>
+              <button
+                class:list={['favorite', { active: video.isFavorite }]}
+                type="button"
+                data-favorite-button
+                data-id={video.id}
+                aria-label={`${video.isFavorite ? 'Remove' : 'Add'} ${video.title} ${video.isFavorite ? 'from' : 'to'} favorites`}
+                aria-pressed={video.isFavorite}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m12 20.7-1.45-1.32C5.4 14.72 2 11.64 2 7.85 2 4.77 4.42 2.35 7.5 2.35c1.74 0 3.41.81 4.5 2.09a6.04 6.04 0 0 1 4.5-2.09c3.08 0 5.5 2.42 5.5 5.5 0 3.79-3.4 6.87-8.55 11.54L12 20.7Z" />
+                </svg>
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <p class="empty-state" id="empty-state" hidden>Nothing here yet. Try another search.</p>
+    </main>
+
+    <dialog id="preview-dialog">
+      <div class="dialog-head">
+        <div>
+          <p>Now previewing</p>
+          <h2 id="dialog-title">{featured?.title}</h2>
+        </div>
+        <button type="button" id="close-dialog" aria-label="Close preview">×</button>
+      </div>
+      <div class="player-frame">
+        <iframe
+          id="preview-frame"
+          title="Video preview"
+          src=""
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          sandbox="allow-scripts allow-same-origin allow-presentation"
+          allowfullscreen
+        ></iframe>
+      </div>
+    </dialog>
+
+    <script>
+      const grid = document.querySelector<HTMLElement>('#video-grid')!;
+      const cards = Array.from(document.querySelectorAll<HTMLElement>('.video-card'));
+      const searchInput = document.querySelector<HTMLInputElement>('#search-input')!;
+      const count = document.querySelector<HTMLElement>('#video-count')!;
+      const emptyState = document.querySelector<HTMLElement>('#empty-state')!;
+      const favoritesFilter = document.querySelector<HTMLButtonElement>('#favorites-filter')!;
+      const dialog = document.querySelector<HTMLDialogElement>('#preview-dialog')!;
+      const previewFrame = document.querySelector<HTMLIFrameElement>('#preview-frame')!;
+      const dialogTitle = document.querySelector<HTMLElement>('#dialog-title')!;
+      const closeDialog = document.querySelector<HTMLButtonElement>('#close-dialog')!;
+      let favoritesOnly = false;
+
+      function applyFilters() {
+        const query = searchInput.value.trim().toLowerCase();
+        let visible = 0;
+
+        for (const card of cards) {
+          const matchesSearch = card.dataset.title?.includes(query) ?? false;
+          const matchesFavorite = !favoritesOnly || card.dataset.favorite === 'true';
+          const shouldShow = matchesSearch && matchesFavorite;
+          card.hidden = !shouldShow;
+          if (shouldShow) visible += 1;
+        }
+
+        count.textContent = String(visible);
+        emptyState.hidden = visible !== 0;
+      }
+
+      searchInput.addEventListener('input', applyFilters);
+      favoritesFilter.addEventListener('click', () => {
+        favoritesOnly = !favoritesOnly;
+        favoritesFilter.classList.toggle('active', favoritesOnly);
+        applyFilters();
+      });
+
+      grid.addEventListener('click', async (event) => {
+        if (!(event.target instanceof Element)) return;
+        const previewButton = event.target.closest<HTMLElement>('[data-preview]');
+        const favoriteButton = event.target.closest<HTMLButtonElement>('[data-favorite-button]');
+
+        if (previewButton) {
+          dialogTitle.textContent = previewButton.dataset.title ?? 'Video preview';
+          const embedUrl = new URL(previewButton.dataset.embed ?? '', window.location.href);
+          embedUrl.searchParams.set('playsinline', '1');
+          embedUrl.searchParams.set('autoplay', '1');
+          previewFrame.src = embedUrl.toString();
+          dialog.showModal();
+          return;
+        }
+
+        if (favoriteButton) {
+          favoriteButton.disabled = true;
+          const response = await fetch(`/api/videos/${favoriteButton.dataset.id}/favorite`, {
+            method: 'POST',
+          });
+
+          if (response.ok) {
+            const { video } = (await response.json()) as { video: { isFavorite: boolean } };
+            const card = favoriteButton.closest<HTMLElement>('.video-card');
+            if (!card) return;
+            card.dataset.favorite = String(video.isFavorite);
+            favoriteButton.classList.toggle('active', video.isFavorite);
+            favoriteButton.setAttribute('aria-pressed', String(video.isFavorite));
+            applyFilters();
+          }
+
+          favoriteButton.disabled = false;
+        }
+      });
+
+      function closePreview() {
+        dialog.close();
+        previewFrame.src = '';
+      }
+
+      closeDialog.addEventListener('click', closePreview);
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) closePreview();
+      });
+      dialog.addEventListener('close', () => {
+        previewFrame.src = '';
+      });
+    </script>
+  </body>
 </html>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 80px;
+    align-items: end;
+    padding: 76px 0 66px;
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 22px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .eyebrow span {
+    width: 32px;
+    height: 3px;
+    background: var(--green);
+  }
+
+  h1 {
+    max-width: 900px;
+    margin: 0;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(58px, 8.7vw, 132px);
+    line-height: 0.82;
+    letter-spacing: -0.09em;
+    text-transform: uppercase;
+  }
+
+  h1 em {
+    color: transparent;
+    font-style: normal;
+    -webkit-text-stroke: 2px var(--ink);
+  }
+
+  .hero-note {
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 20px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .controls p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .controls strong {
+    color: var(--ink);
+  }
+
+  .search {
+    display: flex;
+    width: min(100%, 420px);
+    align-items: center;
+    gap: 10px;
+  }
+
+  .search span {
+    font-size: 26px;
+    line-height: 1;
+    transform: rotate(-20deg);
+  }
+
+  .search input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  .search input::placeholder {
+    color: #aaa9a1;
+  }
+
+  .video-list {
+    padding: 18px 0 80px;
+  }
+
+  .video-card {
+    display: grid;
+    grid-template-columns: 196px 1fr;
+    gap: 24px;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    margin: 0 -12px;
+    padding: 18px 12px;
+    border-radius: 16px;
+    transition: background-color 180ms ease;
+  }
+
+  .video-card:hover {
+    background-color: rgba(182, 255, 0, 0.08);
+  }
+
+  .video-card[hidden] {
+    display: none;
+  }
+
+  .preview {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border: 0;
+    border-radius: 12px;
+    padding: 0;
+    cursor: pointer;
+    background: #171717;
+  }
+
+  .preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.2) contrast(1.08);
+    transition: transform 400ms ease, filter 400ms ease;
+  }
+
+  .preview:hover img {
+    transform: scale(1.04);
+    filter: saturate(0.75) contrast(1.05);
+  }
+
+  .preview-wash {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  .play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--ink);
+    background: var(--green);
+    font-size: 13px;
+    transform: translate(-50%, -50%);
+    transition: transform 160ms ease, background 160ms ease;
+  }
+
+  .preview:hover .play-icon {
+    transform: translate(-50%, -50%) scale(1.1);
+    background: white;
+  }
+
+  .duration {
+    flex: 0 0 70px;
+    border-radius: 999px;
+    padding: 6px 9px;
+    color: var(--muted);
+    background: #ededE6;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+
+  .no-thumb {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #333;
+    background:
+      repeating-linear-gradient(45deg, var(--green), var(--green) 16px, #a4e800 16px, #a4e800 32px);
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 24px;
+    line-height: 0.84;
+    letter-spacing: -0.08em;
+  }
+
+  .card-body {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) 70px 38px;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .list-number {
+    color: #a7a79f;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .card-copy p {
+    margin: 0 0 6px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .card-copy h2 {
+    margin: 0;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(18px, 2vw, 27px);
+    line-height: 1.05;
+    letter-spacing: -0.055em;
+    text-transform: uppercase;
+  }
+
+  .favorite {
+    display: grid;
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    cursor: pointer;
+    background: transparent;
+    transition: background 160ms ease, border 160ms ease, transform 160ms ease;
+  }
+
+  .favorite:hover {
+    border-color: var(--ink);
+    transform: scale(1.06);
+  }
+
+  .favorite svg {
+    width: 16px;
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.7px;
+  }
+
+  .favorite.active {
+    border-color: var(--green);
+    background: var(--green);
+  }
+
+  .favorite.active svg {
+    fill: var(--ink);
+  }
+
+  .empty-state {
+    margin: 80px 0;
+    text-align: center;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 24px;
+    text-transform: uppercase;
+  }
+
+  dialog {
+    width: min(920px, calc(100% - 32px));
+    border: 0;
+    border-radius: 22px;
+    padding: 0;
+    color: white;
+    background: #101010;
+    box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
+  }
+
+  dialog::backdrop {
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(5px);
+  }
+
+  .dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 20px;
+  }
+
+  .dialog-head p {
+    margin: 0 0 3px;
+    color: var(--green);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .dialog-head h2 {
+    margin: 0;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 18px;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+  }
+
+  .dialog-head button {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #444;
+    border-radius: 50%;
+    color: white;
+    background: transparent;
+    cursor: pointer;
+    font-size: 25px;
+  }
+
+  .player-frame {
+    aspect-ratio: 16 / 9;
+    background: black;
+  }
+
+  .player-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: 1fr;
+      gap: 26px;
+      padding: 60px 0 48px;
+    }
+
+    .hero-note {
+      max-width: 340px;
+    }
+
+    .video-card {
+      grid-template-columns: 160px 1fr;
+    }
+
+    .card-body {
+      grid-template-columns: minmax(0, 1fr) 64px 38px;
+    }
+
+    .list-number {
+      display: none;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .hero {
+      padding-top: 46px;
+    }
+
+    h1 {
+      font-size: clamp(52px, 17vw, 76px);
+    }
+
+    .controls {
+      align-items: start;
+      flex-direction: column;
+    }
+
+    .video-card {
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px 0;
+    }
+
+    .card-body {
+      grid-template-columns: minmax(0, 1fr) 34px;
+      gap: 10px;
+    }
+
+    .card-copy h2 {
+      font-size: 16px;
+    }
+
+    .card-copy p {
+      margin-bottom: 4px;
+      font-size: 9px;
+    }
+
+    .duration {
+      display: none;
+    }
+
+    .favorite {
+      width: 34px;
+      height: 34px;
+    }
+  }
+</style>

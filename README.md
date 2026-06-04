@@ -1,43 +1,57 @@
-# Astro Starter Kit: Minimal
+# PLAYLIST
+
+A minimal Astro video collection with an admin submission portal, inline video previews, favorites, Astro DB, and Cloudflare Workers deployment support.
+
+## Development
+
+Install dependencies and start Astro:
 
 ```sh
-npm create astro@latest -- --template minimal
+npm install
+npm run dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Development uses Astro DB's persistent file-backed database at `local.db`, configured by
+`.env`. The schema is defined in `db/config.ts`, and `npm run dev` pushes the schema before
+idempotently populating development data from `db/seed.ts`.
 
-## 🚀 Project Structure
+## Turso Production Database
 
-Inside of your Astro project, you'll see the following folders and files:
+Production uses a remote Turso libSQL database through Astro DB.
+
+1. Create a Turso database and token.
+2. Copy `.env.example` to `.env` for local production builds.
+3. Set these variables in the Cloudflare build environment and deployed Worker:
 
 ```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+ASTRO_DB_REMOTE_URL=libsql://your-database-name.turso.io
+ASTRO_DB_APP_TOKEN=your-turso-auth-token
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+4. Push the Astro DB schema to Turso:
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+```sh
+npm run db:push
+```
 
-Any static assets, like images, can be placed in the `public/` directory.
+`ASTRO_DB_APP_TOKEN` is a secret. Do not commit it or place it in `wrangler.jsonc`.
 
-## 🧞 Commands
+## Cloudflare Workers
 
-All commands are run from the root of the project, from a terminal:
+The app uses `@astrojs/cloudflare` and is configured in `wrangler.jsonc`. Astro DB is pinned to patch release `0.21.2` and configured with `mode: 'web'` because Cloudflare Workers cannot use Astro DB's default Node libSQL driver.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+Build and deploy:
 
-## 👀 Want to learn more?
+```sh
+npm run deploy
+```
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+The production build script uses `astro build --remote`, which connects the generated Worker to Turso. A production build therefore requires the Turso environment variables even when run locally. Use `npm run dev` for file-backed local SQLite development.
+
+To add the Turso token directly to an existing Worker through Wrangler:
+
+```sh
+npx wrangler secret put ASTRO_DB_APP_TOKEN
+```
+
+Set `ASTRO_DB_REMOTE_URL` as a Cloudflare environment variable, and make sure both values are also available to the platform running `npm run build`.
